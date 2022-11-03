@@ -48,115 +48,11 @@ jobs:
           name: ${{ matrix.name }}
           path: target/${{ matrix.target }}/release/volta-${{ matrix.name }}.tar.gz
 
-  macos:
-    name: Build - MacOS
-    runs-on: macos-latest
-    steps:
-      - name: Check out code
-        uses: actions/checkout@v2
-      - name: Set up cargo
-        uses: actions-rs/toolchain@v1
-        with:
-          profile: minimal
-          toolchain: 1.63
-          override: true
-      - name: Cargo Cache
-        uses: Swatinem/rust-cache@v2
-      - name: Compile and package Volta
-        run: ./ci/build-macos-x86_64.sh volta-macos
-      - name: Upload release artifact
-        uses: actions/upload-artifact@v2
-        with:
-          name: macos
-          path: target/release/volta-macos.tar.gz
-
-  macos-aarch64:
-    name: Build - MacOS (ARM)
-    runs-on: macos-latest
-    steps:
-      - name: Check out code
-        uses: actions/checkout@v2
-      - name: Set up cargo
-        uses: actions-rs/toolchain@v1
-        with:
-          profile: minimal
-          toolchain: 1.63
-          target: aarch64-apple-darwin
-          override: true
-      - name: Cargo Cache
-        uses: Swatinem/rust-cache@v2
-      - name: Compile and package Volta
-        run: ./ci/build-macos-arm.sh volta-macos-aarch64
-      - name: Upload release artifact
-        uses: actions/upload-artifact@v2
-        with:
-          name: macos-aarch64
-          path: target/aarch64-apple-darwin/release/volta-macos-aarch64.tar.gz
-
-  windows:
-    name: Build - Windows
-    runs-on: windows-latest
-    steps:
-      - name: Check out code
-        uses: actions/checkout@v2
-      - name: Set up cargo
-        uses: actions-rs/toolchain@v1
-        with:
-          profile: minimal
-          toolchain: 1.63
-          override: true
-      - name: Cargo Cache
-        uses: Swatinem/rust-cache@v2
-      - name: Add cargo-wix subcommand
-        uses: actions-rs/cargo@v1
-        with:
-          command: install
-          args: cargo-wix
-      - name: Compile and package installer
-        uses: actions-rs/cargo@v1
-        with:
-          command: wix
-          args: --nocapture --package volta --output target\wix\volta-windows.msi
-      - name: Load Certificate File
-        id: certificate_file
-        if: github.event_name == 'push'
-        uses: timheuer/base64-to-file@v1
-        with:
-          fileName: "volta-certificate.pfx"
-          encodedString: ${{ secrets.INSTALLER_CERTIFICATE }}
-      - name: Sign Installer
-        if: github.event_name == 'push'
-        env:
-          CERTIFICATE_FILE: ${{ steps.certificate_file.outputs.filePath }}
-          CERTIFICATE_PASSWORD: ${{ secrets.INSTALLER_CERTIFICATE_PASSWORD }}
-        run: |
-          & "C:\Program Files (x86)\Windows Kits\10\bin\10.0.19041.0\x86\signtool.exe" sign /fd sha256 /f "$env:CERTIFICATE_FILE" /p "$env:CERTIFICATE_PASSWORD" /tr http://ts.ssl.com /td sha256 /d "Volta: Start Your Engines" /du "https://volta.sh" "target\wix\volta-windows.msi"
-      - name: Verify Signature
-        if: github.event_name == 'push'
-        run: |
-          & "C:\Program Files (x86)\Windows Kits\10\bin\10.0.19041.0\x86\signtool.exe" verify /pa "target\wix\volta-windows.msi"
-      - name: Create zip of binaries
-        run: powershell Compress-Archive volta*.exe volta-windows.zip
-        working-directory: ./target/release
-      - name: Upload installer
-        uses: actions/upload-artifact@v2
-        with:
-          name: windows-installer
-          path: target/wix/volta-windows.msi
-      - name: Upload zip
-        uses: actions/upload-artifact@v2
-        with:
-          name: windows-zip
-          path: target/release/volta-windows.zip
-
   release:
     name: Publish release
     runs-on: ubuntu-latest
     needs:
       - linux
-      - macos
-      - macos-aarch64
-      - windows
     if: github.event_name == 'push'
     steps:
       - name: Check out code
@@ -186,26 +82,26 @@ jobs:
         with:
           name: linux-x64-musl
           path: release
-      - name: Fetch MacOS artifact
-        uses: actions/download-artifact@v2
-        with:
-          name: macos
-          path: release
-      - name: Fetch MacOS (ARM) artifact
-        uses: actions/download-artifact@v2
-        with:
-          name: macos-aarch64
-          path: release
-      - name: Fetch Windows installer
-        uses: actions/download-artifact@v2
-        with:
-          name: windows-installer
-          path: release
-      - name: Fetch Windows zip
-        uses: actions/download-artifact@v2
-        with:
-          name: windows-zip
-          path: release
+      # - name: Fetch MacOS artifact
+      #   uses: actions/download-artifact@v2
+      #   with:
+      #     name: macos
+      #     path: release
+      # - name: Fetch MacOS (ARM) artifact
+      #   uses: actions/download-artifact@v2
+      #   with:
+      #     name: macos-aarch64
+      #     path: release
+      # - name: Fetch Windows installer
+      #   uses: actions/download-artifact@v2
+      #   with:
+      #     name: windows-installer
+      #     path: release
+      # - name: Fetch Windows zip
+      #   uses: actions/download-artifact@v2
+      #   with:
+      #     name: windows-zip
+      #     path: release
       - name: Show release artifacts
         run: ls -la release
       - name: Create draft release
@@ -253,42 +149,42 @@ jobs:
           asset_path: ./release/volta-linux-x64-musl.tar.gz
           asset_name: volta-${{ steps.release_info.outputs.version }}-linux-x64-musl.tar.gz
           asset_content_type: application/gzip
-      - name: Upload MacOS artifact
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./release/volta-macos.tar.gz
-          asset_name: volta-${{ steps.release_info.outputs.version }}-macos.tar.gz
-          asset_content_type: application/gzip
-      - name: Upload MacOS (ARM) artifact
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./release/volta-macos-aarch64.tar.gz
-          asset_name: volta-${{ steps.release_info.outputs.version }}-macos-aarch64.tar.gz
-          asset_content_type: application/gzip
-      - name: Upload Windows installer
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./release/volta-windows.msi
-          asset_name: volta-${{ steps.release_info.outputs.version }}-windows-x86_64.msi
-          asset_content_type: application/x-msi
-      - name: Upload Windows zip
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./release/volta-windows.zip
-          asset_name: volta-${{ steps.release_info.outputs.version }}-windows.zip
-          asset_content_type: application/zip
+      # - name: Upload MacOS artifact
+      #   uses: actions/upload-release-asset@v1
+      #   env:
+      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      #   with:
+      #     upload_url: ${{ steps.create_release.outputs.upload_url }}
+      #     asset_path: ./release/volta-macos.tar.gz
+      #     asset_name: volta-${{ steps.release_info.outputs.version }}-macos.tar.gz
+      #     asset_content_type: application/gzip
+      # - name: Upload MacOS (ARM) artifact
+      #   uses: actions/upload-release-asset@v1
+      #   env:
+      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      #   with:
+      #     upload_url: ${{ steps.create_release.outputs.upload_url }}
+      #     asset_path: ./release/volta-macos-aarch64.tar.gz
+      #     asset_name: volta-${{ steps.release_info.outputs.version }}-macos-aarch64.tar.gz
+      #     asset_content_type: application/gzip
+      # - name: Upload Windows installer
+      #   uses: actions/upload-release-asset@v1
+      #   env:
+      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      #   with:
+      #     upload_url: ${{ steps.create_release.outputs.upload_url }}
+      #     asset_path: ./release/volta-windows.msi
+      #     asset_name: volta-${{ steps.release_info.outputs.version }}-windows-x86_64.msi
+      #     asset_content_type: application/x-msi
+      # - name: Upload Windows zip
+      #   uses: actions/upload-release-asset@v1
+      #   env:
+      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      #   with:
+      #     upload_url: ${{ steps.create_release.outputs.upload_url }}
+      #     asset_path: ./release/volta-windows.zip
+      #     asset_name: volta-${{ steps.release_info.outputs.version }}-windows.zip
+      #     asset_content_type: application/zip
       - name: Upload manifest file
         uses: actions/upload-release-asset@v1
         env:
