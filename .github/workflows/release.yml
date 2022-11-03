@@ -233,7 +233,7 @@ jobs:
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
           asset_path: ./release/volta-linux-arm64-musl.tar.gz
-          asset_name: volta-${{ steps.release_info.outputs.version }}-llinux-arm64-musltar.gz
+          asset_name: volta-${{ steps.release_info.outputs.version }}-linux-arm64-musl.tar.gz
           asset_content_type: application/gzip
       - name: Upload Linux artifact (x64-gnu)
         uses: actions/upload-release-asset@v1
@@ -242,7 +242,7 @@ jobs:
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
           asset_path: ./release/volta-linux-x64-gnu.tar.gz
-          asset_name: volta-${{ steps.release_info.outputs.version }linux-x64-gnuux.tar.gz
+          asset_name: volta-${{ steps.release_info.outputs.version }}-linux-x64-gnu.tar.gz
           asset_content_type: application/gzip
       - name: Upload Linux artifact (x64-musl)
         uses: actions/upload-release-asset@v1
@@ -251,7 +251,7 @@ jobs:
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
           asset_path: ./release/volta-linux-x64-musl.tar.gz
-          asset_name: volta-${{ steps.release_info.outputs.version }}linux-x64-muslx.tar.gz
+          asset_name: volta-${{ steps.release_info.outputs.version }}-linux-x64-musl.tar.gz
           asset_content_type: application/gzip
       - name: Upload MacOS artifact
         uses: actions/upload-release-asset@v1
