@@ -1,10 +1,12 @@
 on:
   push:
-    tags:
-      - v*
-  pull_request:
     branches:
       - main
+    tags:
+      - v*
+  # pull_request:
+  #   branches:
+  #     - main
 
 name: Production
 
@@ -164,10 +166,25 @@ jobs:
         env:
           TAG: ${{ github.ref }}
         run: echo "::set-output name=version::${TAG:11}"
-      - name: Fetch Linux artifact
+      - name: Fetch linux-arm64-gnu artifact
         uses: actions/download-artifact@v2
         with:
-          name: linux
+          name: linux-arm64-gnu
+          path: release
+      - name: Fetch linux-arm64-musl artifact
+        uses: actions/download-artifact@v2
+        with:
+          name: linux-arm64-musl
+          path: release
+      - name: Fetch linux-x64-gnu artifact
+        uses: actions/download-artifact@v2
+        with:
+          name: linux-x64-gnu
+          path: release
+      - name: Fetch linux-x64-musl artifact
+        uses: actions/download-artifact@v2
+        with:
+          name: linux-x64-musl
           path: release
       - name: Fetch MacOS artifact
         uses: actions/download-artifact@v2
@@ -200,14 +217,41 @@ jobs:
           tag_name: ${{ github.ref }}
           release_name: ${{ github.ref }}
           draft: true
-      - name: Upload Linux artifact
+      - name: Upload Linux artifact (arm64-gnu)
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./release/volta-linux.tar.gz
-          asset_name: volta-${{ steps.release_info.outputs.version }}-linux.tar.gz
+          asset_path: ./release/volta-linux-arm64-gnu.tar.gz
+          asset_name: volta-${{ steps.release_info.outputs.version }}-linux-arm64-gnu.tar.gz
+          asset_content_type: application/gzip
+      - name: Upload Linux artifact (arm64-musl)
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./release/volta-linux-arm64-musl.tar.gz
+          asset_name: volta-${{ steps.release_info.outputs.version }}-llinux-arm64-musltar.gz
+          asset_content_type: application/gzip
+      - name: Upload Linux artifact (x64-gnu)
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./release/volta-linux-x64-gnu.tar.gz
+          asset_name: volta-${{ steps.release_info.outputs.version }linux-x64-gnuux.tar.gz
+          asset_content_type: application/gzip
+      - name: Upload Linux artifact (x64-musl)
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./release/volta-linux-x64-musl.tar.gz
+          asset_name: volta-${{ steps.release_info.outputs.version }}linux-x64-muslx.tar.gz
           asset_content_type: application/gzip
       - name: Upload MacOS artifact
         uses: actions/upload-release-asset@v1
